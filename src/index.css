@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .custom-scrollbar {
+    @apply scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400;
+  }
+
+  .input-highlight {
+    @apply border-blue-300 ring-2 ring-blue-100;
+  }
+}
+
+.scroll-sync {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+.scroll-sync::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scroll-sync::-webkit-scrollbar-track {
+  background: #f7fafc;
+}
+
+.scroll-sync::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 4px;
+}

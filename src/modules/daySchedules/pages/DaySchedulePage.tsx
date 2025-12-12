@@ -11,13 +11,16 @@ import DayScheduleTable from "../components/DayScheduleTable";
 
 import { ITButton, ITDialog } from "axzy_ui_system";
 import { convertToISODateTime } from "@app/core/utils/dateFormatter";
+import { format } from "date-fns";
+import { useDispatch } from "react-redux";
+import { showToast } from "@app/core/store/toast/toast.slice";
 
 const DaySchedulePage = () => {
   const [schedules, setSchedules] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [selected, setSelected] = useState<any | null>(null);
-
+  const dispatch = useDispatch();
   const fetchSchedules = useCallback(async () => {
     const response = await getAllDaySchedules().catch(() => null);
     if (response) setSchedules(response.data);
@@ -48,7 +51,13 @@ const DaySchedulePage = () => {
   };
 
   const handleDelete = async (id: number) => {
-    const response = await deleteDaySchedule(id);
+    const response = await deleteDaySchedule(id).catch((error) => {
+      console.log(error);
+      dispatch(showToast({
+        message: error?.message || "Error al eliminar horario",
+        type: "error",
+      }));
+    });
     if (response) fetchSchedules();
   };
 
@@ -97,8 +106,25 @@ const DaySchedulePage = () => {
         }}
       >
         <p className="mb-4 text-gray-700">
-          ¿Eliminar horario del {selected?.date} de {selected?.startTime} a{" "}
-          {selected?.endTime}?
+          ¿Eliminar horario del{" "}
+          <span className="font-bold">
+            {selected?.date
+              ? format(new Date(selected.date), "dd/MM/yyyy")
+              : ""}
+          </span>{" "}
+          de{" "}
+          <span className="font-bold">
+            {selected?.startTime
+              ? format(new Date(selected.startTime), "HH:mm")
+              : ""}
+          </span>{" "}
+          a{" "}
+          <span className="font-bold">
+            {selected?.endTime
+              ? format(new Date(selected.endTime), "HH:mm")
+              : ""}
+          </span>
+          ?
         </p>
 
         <div className="flex justify-end gap-3">

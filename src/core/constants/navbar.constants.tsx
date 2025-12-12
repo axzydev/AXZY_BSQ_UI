@@ -1,6 +1,7 @@
 import { AppState } from "@app/core/store/store";
 import LOGO from "@assets/logo.png";
 import {
+  FaCalendarAlt,
   FaChild,
   FaClock,
   FaDumbbell,
@@ -47,6 +48,13 @@ export const useNavigationItems = (): any[] => {
       action: () => navigate("/appointments"),
       icon: <FaListAlt className="text-white" />,
       isActive: isRouteActive("/appointments"),
+    },
+    {
+      id: "calendar",
+      label: "Calendario",
+      action: () => navigate("/calendar"),
+      isActive: isRouteActive("/calendar"),
+      icon: <FaCalendarAlt className="text-white" />,
     },
   ];
 

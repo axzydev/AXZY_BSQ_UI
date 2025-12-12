@@ -47,7 +47,7 @@ const ChildForm = ({ initialValues, onSubmit, isLoading }: ChildFormProps) => {
         });
       }}
     >
-      {({ handleChange, handleBlur, values, errors, touched, isValid, setFieldValue }) => (
+      {({ handleChange, handleBlur, values, errors, touched, isValid }) => (
         <Form className="flex flex-col gap-4">
           <ITInput
             name="name"

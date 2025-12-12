@@ -1,15 +1,10 @@
 import { get } from "@app/core/axios/axios";
 import { saveTableState } from "@app/core/store/tables/tables.slice";
-import {
-  PaginatedResponse,
-  TableFilters,
-  UsePaginatedTableProps,
-  UsePaginatedTableReturn,
-} from "axzy_ui_system";
-import { useState, useEffect, useCallback, useRef,  } from "react";
+
+import { useCallback, useEffect, useRef, useState, } from "react";
 import { useDispatch } from "react-redux";
 
-export function usePaginatedTable<T>({
+export function usePaginatedTable({
   apiUrl,
   tableKey,
   initialPage = 1,
@@ -19,20 +14,20 @@ export function usePaginatedTable<T>({
   initialFilters = {},
   initialSearchTerm = "",
   saveStateToRedux = false,
-}: UsePaginatedTableProps<T> & {
+}: any & {
   tableKey?: string;
   initialPage?: number;
   initialSortField?: string;
   initialSearchTerm?: string;
   saveStateToRedux?: boolean;
-}): UsePaginatedTableReturn<T> & {
+}): any & {
   searchTerm: string;
   handleSearchChange: (term: string) => void;
   resetTable: () => void;
 } {
   const dispatch = useDispatch();
   
-  const [state, setState] = useState<PaginatedResponse<T>>({
+  const [state, setState] = useState<any>({
     items: [],
     pageIndex: initialPage,
     pageSize: initialPageSize,
@@ -44,7 +39,7 @@ export function usePaginatedTable<T>({
     sortDescending: initialSortDescending,
   });
 
-  const [filters, setFilters] = useState<TableFilters>(initialFilters);
+  const [filters, setFilters] = useState<any>(initialFilters);
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +55,7 @@ export function usePaginatedTable<T>({
     sortDescending: boolean;
     sortField: string;
     searchTerm: string;
-    filters: TableFilters;
+    filters: any;
   }) => {
     if (saveStateToRedux && tableKey) {
       const stateToSave = {
@@ -119,11 +114,11 @@ export function usePaginatedTable<T>({
         });
 
         const url = `${apiUrl}?${params.toString()}`;
-        const response = await get<PaginatedResponse<T>>(url, { signal });
+        const response = await get<any>(url, { signal });
 
         if (!signal.aborted) {
           if (response.success) {
-            setState((prevState) => ({
+            setState((prevState: any) => ({
               ...response.data,
               // Mantener el pageIndex actual en lugar de usar el de la respuesta
               pageIndex: prevState.pageIndex,
@@ -170,7 +165,7 @@ const fetchDataWithOverride = useCallback(
     overridePageSize?: number,
     overrideSortField?: string,
     overrideSortDescending?: boolean,
-    overrideFilters?: TableFilters,
+    overrideFilters?: any,
     overrideSearchTerm?: string
   ) => {
     if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -208,7 +203,7 @@ const fetchDataWithOverride = useCallback(
       });
 
       const url = `${apiUrl}?${params.toString()}`;
-      const response = await get<PaginatedResponse<T>>(url, { signal });
+      const response = await get<any>(url, { signal });
 
       if (!signal.aborted) {
         if (response.success) {
@@ -250,7 +245,7 @@ const fetchDataWithOverride = useCallback(
 );
 
 const resetTable = useCallback(() => {
-  const newFilters: TableFilters = {};
+  const newFilters: any = {};
   const newSearchTerm = "";
   const newPageIndex = 1;
   const newSortField = initialSortField ?? "invoiceDate";
@@ -259,7 +254,7 @@ const resetTable = useCallback(() => {
   // Actualizamos el estado local antes de fetch
   setFilters(newFilters);
   setSearchTerm(newSearchTerm);
-  setState((prev) => ({
+  setState((prev: any) => ({
     ...prev,
     pageIndex: newPageIndex,
     sortField: newSortField,
@@ -304,16 +299,16 @@ const resetTable = useCallback(() => {
   }, []);
 
   const handlePageChange = useCallback((page: number) => {
-    setState((prev) => ({ ...prev, pageIndex: page }));
+    setState((prev: any) => ({ ...prev, pageIndex: page }));
   }, []);
 
   const handleItemsPerPageChange = useCallback((newPageSize: number) => {
-    setState((prev) => ({ ...prev, pageSize: newPageSize, pageIndex: 1 }));
+    setState((prev: any) => ({ ...prev, pageSize: newPageSize, pageIndex: 1 }));
   }, []);
 
   // MODIFICACIÓN CLAVE: Mantener el pageIndex actual al cambiar el ordenamiento
   const handleSortChange = useCallback((config: { key: string; direction: "asc" | "desc" }) => {
-    setState((prev) => ({
+    setState((prev: any) => ({
       ...prev,
       sortDescending: config.direction === "desc",
       sortField: config.key,
@@ -321,15 +316,15 @@ const resetTable = useCallback(() => {
     }));
   }, []);
 
-  const handleFilterChange = useCallback((newFilters: TableFilters) => {
+  const handleFilterChange = useCallback((newFilters: any) => {
     setFilters(newFilters);
-    setState((prev) => ({ ...prev, pageIndex: 1 }));
+    setState((prev: any) => ({ ...prev, pageIndex: 1 }));
   }, []);
 
   const handleSearchChange = useCallback((term: string) => {
     setSearchTerm(term);
-    setFilters((prev) => ({ ...prev, query: term }));
-    setState((prev) => ({ ...prev, pageIndex: 1 }));
+    setFilters((prev: any) => ({ ...prev, query: term }));
+    setState((prev: any) => ({ ...prev, pageIndex: 1 }));
   }, []);
 
   const refreshData = useCallback(() => {

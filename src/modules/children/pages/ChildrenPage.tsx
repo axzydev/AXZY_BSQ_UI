@@ -95,8 +95,8 @@ const ChildrenPage = () => {
             await assignChildToTrainingMode({
                 userId: Number(targetUserId),
                 childId: selectedChild.id,
-                trainingModeId: values.trainingModeId,
-                dayScheduleId: values.dayScheduleId,
+                trainingModeId: Number(values.trainingModeId),
+                dayScheduleId: Number(values.dayScheduleId),
             });
             setShowAssignModal(false);
             setSelectedChild(null);

@@ -12,6 +12,8 @@ import TrainingModePage from "./modules/traningMode/pages/TraningModePage";
 import DaySchedulePage from "./modules/daySchedules/pages/DaySchedulePage";
 import ChildrenPage from "./modules/children/pages/ChildrenPage";
 import AppointmentsPage from "./modules/appointments/pages/AppointmentsPage";
+import CalendarPage from "./modules/calendar/pages/CalendarPage";
+
 
 function App() {
   const token = useSelector((state: any) => state.auth.token);
@@ -72,6 +74,8 @@ function App() {
         <Route path="/day-schedule" element={<DaySchedulePage />} />
         <Route path="/children" element={<ChildrenPage />} />
         <Route path="/appointments" element={<AppointmentsPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
+
       </Route>
       <Route path="*" element={<Navigate to="/home" />} />
     </Routes>

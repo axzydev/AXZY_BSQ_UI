@@ -1,6 +1,6 @@
 import { AppState } from "@app/core/store/store";
 import { useEffect, useState } from "react";
-import { FaChild, FaClock, FaDumbbell, FaListAlt } from "react-icons/fa";
+import { FaCalendarAlt, FaChild, FaClock, FaDumbbell, FaListAlt } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { HomeCardItem } from "../components/HomeCardItem";
@@ -29,6 +29,12 @@ const HomePage = () => {
         description: "Consulta y gestiona tus citas activas",
         icon: <FaListAlt className="text-white" />,
         action: () => navigate("/appointments"),
+      },
+      {
+        title: "Calendario",
+        description: "Consulta los horarios de entrenamiento",
+        icon: <FaCalendarAlt className="text-white" />,
+        action: () => navigate("/calendar"),
       },
     ];
 

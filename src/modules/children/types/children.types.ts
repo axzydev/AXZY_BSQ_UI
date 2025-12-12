@@ -23,6 +23,6 @@ export interface ChildrenUpdate {
 export interface AssignTrainingMode {
   userId: number;
   childId: number;
-  trainingModeId: string; // From form (likely string)
+  trainingModeId: number; // From form (likely string)
   dayScheduleId: number;
 }

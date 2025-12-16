@@ -7,6 +7,7 @@ import {
   FaDumbbell,
   FaHome,
   FaListAlt,
+  FaMoneyBillWave,
 } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -56,7 +57,12 @@ export const useNavigationItems = (): any[] => {
       isActive: isRouteActive("/calendar"),
       icon: <FaCalendarAlt className="text-white" />,
     },
-  ];
+  ].filter(item => {
+    if (user?.role === "COACH" && item.id === "children") {
+        return false;
+    }
+    return true;
+  });
 
   if (user?.role === "ADMIN") {
     baseItems.push(
@@ -73,6 +79,13 @@ export const useNavigationItems = (): any[] => {
         action: () => navigate("/training-modes"),
         icon: <FaDumbbell className="text-white" />,
         isActive: isRouteActive("/training-modes"),
+      },
+      {
+        id: "payments",
+        label: "Pagos",
+        action: () => navigate("/payments"),
+        icon: <FaMoneyBillWave className="text-white" />,
+        isActive: isRouteActive("/payments"),
       },
     );
   }

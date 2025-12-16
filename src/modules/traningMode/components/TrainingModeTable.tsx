@@ -49,6 +49,11 @@ const TrainingModeTable = ({ data, onRowClick, onRowDelete }: TrainingModeTableP
       type: "string",
     },
     {
+      key: "coachCost",
+      label: "Costo ($)",
+      type: "number",
+    },
+    {
       key: "isActive",
       label: "Activo",
       type: "boolean",

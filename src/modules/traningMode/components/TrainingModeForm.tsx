@@ -12,6 +12,7 @@ export interface ITrainingModeForm {
   name: string;
   description?: string | null;
   isActive: boolean;
+  coachCost: number;
 }
 
 const TrainingModeForm = ({
@@ -25,6 +26,7 @@ const TrainingModeForm = ({
     name: "",
     description: "",
     isActive: true,
+    coachCost: 0,
   };
 
   // ---------------------------
@@ -52,6 +54,14 @@ const TrainingModeForm = ({
       column: 12,
       maxLength: 200,
       validation: Yup.string().nullable(),
+    },
+    {
+      name: "coachCost",
+      label: "Costo Entrenador ($)",
+      type: "number",
+      required: true,
+      column: 12,
+      validation: Yup.number().min(0, "El costo debe ser mayor o igual a 0").required("Requerido"),
     },
   ];
 

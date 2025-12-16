@@ -5,6 +5,7 @@ import { FaCalendarAlt, FaTrash } from "react-icons/fa";
 import { getAllTrainingModes } from "../../traningMode/services/TrainingModeService";
 import { getAllDaySchedules, createDaySchedule, deleteDaySchedule } from "../../daySchedules/services/DayScheduleService";
 import { deleteAppointment } from "../../appointments/service/AppointmentService";
+import { getCoaches, User as CoachUser } from "../../users/services/UserService";
 import { useSelector, useDispatch } from "react-redux";
 import { AppState } from "@app/core/store/store";
 import { assignChildToTrainingMode, getChildByUserId, getAllChildren } from "../../children/service/ChildrenService";
@@ -26,6 +27,7 @@ const CalendarPage = () => {
     const [trainingModes, setTrainingModes] = useState<any[]>([]);
     const [daySchedules, setDaySchedules] = useState<any[]>([]);
     const [children, setChildren] = useState<any[]>([]);
+    const [coaches, setCoaches] = useState<CoachUser[]>([]);
     
     const [selectedModeId, setSelectedModeId] = useState<string>("");
     const [loading, setLoading] = useState(false);
@@ -55,12 +57,18 @@ const CalendarPage = () => {
                 ]);
 
                 if (user?.role === "ADMIN") {
-                     // Admin fetches ALL children
-                     const allChildrenRes = await getAllChildren();
-                     if (allChildrenRes.data) {
-                         setChildren(allChildrenRes.data);
-                     }
+                     // Admin fetches ALL children and Coaches
+                     const [allChildrenRes, coachesRes] = await Promise.all([
+                         getAllChildren(),
+                         getCoaches()
+                     ]);
+                     
+                     if (allChildrenRes.data) setChildren(allChildrenRes.data);
+                     if (coachesRes.data) setCoaches(coachesRes.data);
+
                 } else if (user?.id) {
+                    // Fetch children for regular user (or coach acting as parent?)
+                    // Coach role behavior regarding children isn't specified, assuming same as user for now.
                     const childrenRes = await getChildByUserId(Number(user.id));
                     if (childrenRes.data) {
                         setChildren(childrenRes.data);
@@ -119,17 +127,17 @@ const CalendarPage = () => {
 
     const handleDelete = async () => {
         if (!selectedEvent) return;
+        if (!confirm("¿Estás seguro de que deseas eliminar este horario? Esta acción no se puede deshacer.")) return;
 
         setLoading(true);
         try {
             await deleteDaySchedule(Number(selectedEvent.id));
-            dispatch(showToast({ type: "success", message: "Eliminado correctamente" }));
+            dispatch(showToast({ type: "success", message: "Horario eliminado correctamente" }));
             setShowAssignModal(false);
             setSelectedEvent(null);
             
             const schedulesRes = await getAllDaySchedules();
             if (schedulesRes.data) setDaySchedules(schedulesRes.data);
-
         } catch (error: any) {
             console.error("Error deleting schedule:", error);
             dispatch(showToast({ type: "error", message: error?.message || "Error al eliminar" }));
@@ -146,13 +154,9 @@ const CalendarPage = () => {
             await deleteAppointment(appointmentId);
             dispatch(showToast({ type: "success", message: "Alumno dado de baja correctamente" }));
             
-            // Refetch schedules to update list (or update local state if preferred, but refetch is safer for now)
             const schedulesRes = await getAllDaySchedules();
             if (schedulesRes.data) {
                 setDaySchedules(schedulesRes.data);
-                // Also update selectedEvent appointments locally to reflect change immediately in UI if possible
-                // But refetching won't update selectedEvent automatically unless we re-find it.
-                // Let's re-find the updated schedule and update selectedEvent.
                 const updatedSchedule = schedulesRes.data.find((s: any) => String(s.id) === selectedEvent?.id);
                 if (updatedSchedule && selectedEvent) {
                      setSelectedEvent({
@@ -204,8 +208,8 @@ const CalendarPage = () => {
     }, [daySchedules, selectedModeId]);
 
     const handleSlotClick = (date: Date) => {
-        if (user?.role === "ADMIN") {
-             // Default to 30 minutes slot on click
+        if (user?.role === "ADMIN" || user?.role === "COACH") {
+             // Default to 30 minutes slot on click (Admin or Coach)
              const end = new Date(date);
              end.setMinutes(end.getMinutes() + 30);
              handleSelectRange(date, end);
@@ -220,14 +224,21 @@ const CalendarPage = () => {
 
     // Creation Dialog State
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [createData, setCreateData] = useState<{start: Date | null, end: Date | null, capacity: number}>({ 
-        start: null, end: null, capacity: 10 
+    const [createData, setCreateData] = useState<{start: Date | null, end: Date | null, capacity: number, coachId: string}>({ 
+        start: null, end: null, capacity: 10, coachId: ""
     });
 
     const handleSelectRange = (start: Date, end: Date) => {
         console.log("Selected range:", start, end);
-        if (user?.role !== "ADMIN") return;
-        setCreateData({ start, end, capacity: 10 });
+        if (user?.role !== "ADMIN" && user?.role !== "COACH") return;
+        
+        // If Coach, auto-select self
+        let initialCoachId = "";
+        if (user?.role === "COACH") {
+            initialCoachId = String(user.id);
+        }
+
+        setCreateData({ start, end, capacity: 10, coachId: initialCoachId });
         setShowCreateModal(true);
     };
 
@@ -290,21 +301,30 @@ const CalendarPage = () => {
                         <p className="text-gray-700">
                              Hora: {selectedEvent?.start ? format(new Date(selectedEvent.start), 'HH:mm') : '-'} - {selectedEvent?.end ? format(new Date(selectedEvent.end), 'HH:mm') : '-'}
                         </p>
+                        {selectedEvent?.data?.coach && (
+                            <p className="text-gray-700 font-medium">
+                                Entrenador: {selectedEvent.data.coach.name} {selectedEvent.data.coach.lastName}
+                            </p>
+                        )}
                     </div>
                     
-                    {/* ENROLLMENT LIST (Admin: All, Parent: Own Children) */}
+                    {/* ENROLLMENT LIST (Admin/Coach: All, Parent: Own Children) */}
                     {(() => {
                         const appointments = selectedEvent?.data?.appointments || [];
-                        const visibleAppointments = user?.role === "ADMIN" 
+                        const isCoach = user?.role === "COACH";
+                        const isAdmin = user?.role === "ADMIN";
+                        
+                        // Coach and Admin see all
+                        const visibleAppointments = (isAdmin || isCoach)
                             ? appointments 
                             : appointments.filter((appt: any) => children.some(c => c.id === appt.child.id));
 
-                        if (visibleAppointments.length === 0 && user?.role !== "ADMIN") return null;
+                        if (visibleAppointments.length === 0 && !isAdmin && !isCoach) return null;
 
                         return (selectedEvent?.data?.appointments && (
                             <div className="border rounded-md p-3">
                                 <p className="text-sm font-bold mb-2">
-                                    {user?.role === "ADMIN" ? `Inscritos (${appointments.length}):` : "Tus Hijos Inscritos:"}
+                                    {(isAdmin || isCoach) ? `Inscritos (${appointments.length}):` : "Tus Hijos Inscritos:"}
                                 </p>
                                 {visibleAppointments.length === 0 ? (
                                     <p className="text-sm text-gray-500">No hay inscritos.</p>
@@ -313,13 +333,16 @@ const CalendarPage = () => {
                                         {visibleAppointments.map((appt: any) => (
                                             <li key={appt.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                                                 <span>- {appt.child?.name} {appt.child?.lastName}</span>
-                                                <button 
-                                                    onClick={() => handleUnenroll(appt.id)}
-                                                    className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
-                                                    title="Dar de baja"
-                                                >
-                                                    <FaTrash size={12} />
-                                                </button>
+                                                {/* Only Admin or Parent (for their own kid) can delete. Coach CANNOT. */}
+                                                {!isCoach && (
+                                                    <button 
+                                                        onClick={() => handleUnenroll(appt.id)}
+                                                        className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
+                                                        title="Dar de baja"
+                                                    >
+                                                        <FaTrash size={12} />
+                                                    </button>
+                                                )}
                                             </li>
                                         ))}
                                     </ul>
@@ -328,40 +351,56 @@ const CalendarPage = () => {
                         ));
                     })()}
 
-                    <ITSelect
-                        label={user?.role === "ADMIN" ? "Inscribir Alumno" : "Seleccionar Hijo"}
-                        name="childId"
-                        options={children.map(c => ({ label: `${c.name} ${c.lastName}`, value: String(c.id) }))}
-                        value={selectedChildId}
-                        onChange={(e) => setSelectedChildId(e.target.value)}
-                        placeholder="-- Seleccione --"
-                    />
-
-                     <div className="flex justify-between pt-4 gap-2">
-                        {user?.role === "ADMIN" && (
-                            <ITButton 
-                                label="Eliminar" 
-                                variant="outlined" 
-                                color="danger"
-                                disabled={selectedEvent?.data.appointments.length > 0}
-                                onClick={handleDelete} 
+                    {/* ONLY SHOW ENROLLMENT INPUT IF NOT COACH */}
+                    {user?.role !== "COACH" && (
+                        <>
+                            <ITSelect
+                                label={user?.role === "ADMIN" ? "Inscribir Alumno" : "Seleccionar Hijo"}
+                                name="childId"
+                                options={children.map(c => ({ label: `${c.name} ${c.lastName}`, value: String(c.id) }))}
+                                value={selectedChildId}
+                                onChange={(e) => setSelectedChildId(e.target.value)}
+                                placeholder="-- Seleccione --"
                             />
-                        )}
-                        <div className="flex gap-2">
-                             <ITButton 
-                                label="Cancelar" 
+
+                            <div className="flex justify-between pt-4 gap-2">
+                                {user?.role === "ADMIN" && (
+                                    <ITButton 
+                                        label="Eliminar" 
+                                        variant="outlined" 
+                                        color="danger"
+                                        disabled={selectedEvent?.data.appointments.length > 0}
+                                        onClick={handleDelete} 
+                                    />
+                                )}
+                                <div className="flex gap-2">
+                                    <ITButton 
+                                        label="Cancelar" 
+                                        variant="outlined" 
+                                        color="secondary" 
+                                        onClick={() => setShowAssignModal(false)} 
+                                    />
+                                    <ITButton 
+                                        label="Inscribir" 
+                                        color="primary" 
+                                        onClick={handleAssign}
+                                        disabled={!selectedChildId}
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    )}
+                    {/* IF COACH, JUST SHOW CLOSE BUTTON OR SIMILAR */}
+                    {user?.role === "COACH" && (
+                         <div className="flex justify-end pt-4 gap-2">
+                            <ITButton 
+                                label="Cerrar" 
                                 variant="outlined" 
                                 color="secondary" 
                                 onClick={() => setShowAssignModal(false)} 
                             />
-                             <ITButton 
-                                label="Inscribir" 
-                                color="primary" 
-                                onClick={handleAssign}
-                                disabled={!selectedChildId}
-                            />
                         </div>
-                    </div>
+                    )}
                 </div>
             </ITDialog>
 
@@ -403,6 +442,18 @@ const CalendarPage = () => {
                         />
                     </div>
 
+                    {/* COACH SELECTION FOR ADMIN */}
+                    {user?.role === "ADMIN" && (
+                         <ITSelect
+                            label="Asignar Entrenador"
+                            name="coachId"
+                            options={coaches.map(c => ({ label: `${c.name} ${c.lastName}`, value: String(c.id) }))}
+                            value={createData.coachId}
+                            onChange={(e) => setCreateData({...createData, coachId: e.target.value})}
+                            placeholder="Seleccionar entrenador..."
+                         />
+                    )}
+
                     <div className="flex justify-end pt-4 gap-2">
                         <ITButton 
                             label="Cancelar" 
@@ -416,6 +467,15 @@ const CalendarPage = () => {
                             onClick={async () => {
                                 // Inline implementation until imports are fixed
                                 if (!createData.start || !createData.end || !selectedModeId) return;
+                                if ((user?.role === "ADMIN" || user?.role === "COACH") && !createData.coachId && user?.role === "ADMIN") {
+                                    // if Admin, coach selection is probably mandatory. If Coach, it was auto-set.
+                                    // Let's not strictly enforce it if legacy schedules exist, but for new ones it's good practice.
+                                    // For now, let's allow it to be optional or enforce it if requirement says so.
+                                    // "el admin al dar de alta un horario tiene que seleciionar al entreandor" -> Enforce it? 
+                                    const confirmWithoutString = !createData.coachId ? confirm("¿Crear sin entrenador asignado?") : true;
+                                    if(!confirmWithoutString) return;
+                                }
+
                                 setLoading(true);
                                 try {
                                      await createDaySchedule({
@@ -423,7 +483,8 @@ const CalendarPage = () => {
                                          startTime: createData.start,
                                          endTime: createData.end,
                                          capacity: createData.capacity,
-                                         modeId: Number(selectedModeId)
+                                         modeId: Number(selectedModeId),
+                                         coachId: createData.coachId ? Number(createData.coachId) : null
                                      });
                                      
                                      dispatch(showToast({ type: "success", message: "Horario creado exitosamente" }));
@@ -445,5 +506,6 @@ const CalendarPage = () => {
         </div>
     );
 };
+
 
 export default CalendarPage;

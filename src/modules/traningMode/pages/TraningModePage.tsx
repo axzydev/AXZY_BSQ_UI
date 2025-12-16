@@ -8,12 +8,15 @@ import {
 import TrainingModeTable from "../components/TrainingModeTable";
 import { ITButton, ITDialog } from "axzy_ui_system";
 import TrainingModeForm from "../components/TrainingModeForm";
+import { useDispatch } from "react-redux";
+import { showToast } from "@app/core/store/toast/toast.slice";
 
 const TrainingModePage = () => {
   const [trainingModes, setTrainingModes] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [selectedMode, setSelectedMode] = useState<any | null>(null);
+  const dispatch = useDispatch();
 
   const fetchTrainingModes = useCallback(async () => {
     const response = await getAllTrainingModes().catch((error) => {
@@ -57,12 +60,23 @@ const TrainingModePage = () => {
   };
 
   const handleRemoveMode = async (id: string) => {
-    const response = await deleteTrainingMode(id).catch((error) => {
+    const response = await deleteTrainingMode(id).catch((error: any) => {
       console.error("Error deleting training mode:", error);
+      const messages = error?.messages;
+      const message = Array.isArray(messages) ? messages[0] : "Error al eliminar";
+      
+      dispatch(showToast({
+        type: "error",
+        message: message
+      }));
       return null;
     });
     if (response) {
       console.log("Training mode deleted successfully");
+      dispatch(showToast({
+        type: "success",
+        message: "Modo de entrenamiento eliminado correctamente"
+      }));
       fetchTrainingModes();
     }
   };

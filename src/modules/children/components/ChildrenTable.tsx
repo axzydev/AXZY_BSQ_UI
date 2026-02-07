@@ -81,6 +81,22 @@ const ChildrenTable = ({ data, onRowClick, onRowDelete, onAssignTraining, onView
       render: (row: any) => new Date(row.birthDate).toLocaleDateString(),
     },
     {
+      key: "age",
+      label: "Edad",
+      type: "string",
+      render: (row: any) => {
+        if (!row.birthDate) return "-";
+        const today = new Date();
+        const birthDate = new Date(row.birthDate);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age;
+      }
+    },
+    {
       key: "actions",
       label: "Acciones",
       type: "actions",

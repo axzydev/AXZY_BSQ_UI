@@ -133,9 +133,9 @@ export const Navbar = () => {
 };
 
 export const NAVBAR_LOGO = () => (
-  <img src={LOGO} className="h-[100px] hidden md:flex" />
+  <img src={LOGO} className="h-[60px] hidden md:flex" />
 );
 
 export const SIDEBAR_LOGO = () => (
-  <img src={LOGO} className="mt-5 h-[100px] flex md:hidden" />
+  <img src={LOGO} className="mt-5 h-[60px] flex md:hidden" />
 );
